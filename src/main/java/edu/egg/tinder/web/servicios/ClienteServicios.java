@@ -8,21 +8,25 @@ import java.util.List;
 import java.util.Optional;
 import javax.transaction.Transactional;
 
-
 import edu.egg.tinder.web.entidades.Cliente;
+import edu.egg.tinder.web.entidades.Foto;
+import edu.egg.tinder.web.entidades.Zona;
+import edu.egg.tinder.web.repositorios.ZonaRepositorio;
+import javax.servlet.http.HttpSession;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.User;
 import org.springframework.security.core.userdetails.UserDetails;
-import org.springframework.security.core.userdetails.UserDetailsService;
+import org.springframework.boot.autoconfigure.security.servlet.UserDetailsServiceAutoConfiguration;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.mail.javamail.JavaMailSender;
-
-
+import org.springframework.web.context.request.RequestContextHolder;
+import org.springframework.web.context.request.ServletRequestAttributes;
+import org.springframework.web.multipart.MultipartFile;
 
 @Service
 public class ClienteServicios implements UserDetailsService {
@@ -31,43 +35,65 @@ public class ClienteServicios implements UserDetailsService {
     private ClienteRepositorio clienteRepositorio;
     @Autowired
     private NotificacionServicio notificacionServicio;
-     @Transactional
-    public void crearCliente(Integer id, String documento, String nombre, String apellido, String email,String clave) throws ErrorServicio {
+    @Autowired
+    private FotoServicio fotoServicio;
+    @Autowired
+    private ZonaRepositorio zonaRepositorio;
 
-        validarCliente(id, documento, nombre, apellido, email);
+    @Transactional
+    public void crearCliente(MultipartFile archivo, String nombre, String apellido, String documento, String email, String clave, String clave2, Integer idZona) throws ErrorServicio {
+        Zona zona = zonaRepositorio.getOne(idZona);
+        validarCliente(nombre, apellido, documento, email, clave, clave2, zona);
+
         Cliente cliente = new Cliente();
         cliente.setNombre(nombre);
-        cliente.setId(id);
+
         cliente.setDocumento(documento);
         cliente.setApellido(apellido);
         cliente.setEmail(email);
-        String enciptada  = new BCryptPasswordEncoder().encode(clave);
-            cliente.setClave(enciptada);
+        cliente.setZona(zona);
+        String enciptada = new BCryptPasswordEncoder().encode(clave);
+        cliente.setClave(enciptada);
+
+        Foto foto = fotoServicio.guardar(archivo);
+        cliente.setFoto(foto);
 
         clienteRepositorio.save(cliente);
-        notificacionServicio.enviarMail("Bienvenidos a la libreria", "Libreria de barrio", cliente.getEmail());
+//        notificacionServicio.enviarMail("Bienvenidos a la libreria", "Libreria de barrio", cliente.getEmail());
 
     }
 
-    public void validarCliente(Integer id, String documento, String nombre, String apellido, String email) throws ErrorServicio {
+    public void validarCliente(String nombre, String apellido, String documento, String email, String clave, String clave2, Zona zona) throws ErrorServicio {
 
         if (nombre == null || nombre.isEmpty()) {
             throw new ErrorServicio("El nombre del cliente no puede ser nulo");
         }
-        if (id == null) {
-            throw new ErrorServicio("El id del cliente no puede estar vacio ");
-        }
+
         if (apellido == null || apellido.isEmpty()) {
-            throw new ErrorServicio("El nombre del cliente no puede ser nulo");
+            throw new ErrorServicio("El apellido del cliente no puede ser nulo");
+        }
+        if (documento == null || documento.isEmpty()) {
+            throw new ErrorServicio("El documento del cliente no puede ser nulo");
         }
         if (email == null || email.isEmpty()) {
-            throw new ErrorServicio("El nombre del cliente no puede ser nulo");
+            throw new ErrorServicio("El email del cliente no puede ser nulo");
+        }
+        if (clave == null || clave.isEmpty() || clave.length() <= 6) {
+            throw new ErrorServicio("La clave del cliente no puede ser nulo o menor a 6 caracteres");
+        }
+        if (!clave.equals(clave2)) {
+            throw new ErrorServicio("La claves deben ser iguales");
+        }
+        if (zona == null) {
+            throw new ErrorServicio("No se encontro la zona solictida");
         }
 
     }
-     @Transactional
-    public void modificarCliente(Integer id, String documento, String nombre, String apellido, String email,String clave) throws ErrorServicio {
-        validarCliente(id, documento, nombre, apellido, email);
+
+    @Transactional
+    public void modificarCliente(Integer id, String documento, String nombre, String apellido, String email,MultipartFile archivo, String clave, String clave2, Integer idZona) throws ErrorServicio {
+        Zona zona = zonaRepositorio.getOne(idZona);
+        validarCliente(nombre, apellido, documento, email, clave, clave2, zona);
 
         Optional<Cliente> respuesta = clienteRepositorio.findById(id);
 
@@ -79,8 +105,18 @@ public class ClienteServicios implements UserDetailsService {
             cliente.setDocumento(documento);
             cliente.setApellido(apellido);
             cliente.setEmail(email);
-            String enciptada  = new BCryptPasswordEncoder().encode(clave);
+            cliente.setZona(zona);
+
+            String enciptada = new BCryptPasswordEncoder().encode(clave);
             cliente.setClave(enciptada);
+
+            
+            Integer idFoto = null;
+            if(cliente.getFoto() != null) {
+                idFoto = cliente.getFoto().getidFoto();
+            }
+            Foto foto = fotoServicio.actualizar(idFoto,archivo);
+            cliente.setFoto(foto);
             clienteRepositorio.save(cliente);
 
         } else {
@@ -88,30 +124,36 @@ public class ClienteServicios implements UserDetailsService {
         }
 
     }
+
     @Override
-    public UserDetails loadUserByUsername(String documento) throws UsernameNotFoundException {
-        Cliente cliente = clienteRepositorio.buscarClienteXDocumento(documento);
-        if ( cliente != null ) {
+    public UserDetails loadUserByUsername(String email) throws UsernameNotFoundException {
+        Cliente cliente = clienteRepositorio.buscarClienteXEmail(email);
+        if (cliente != null) {
             List<GrantedAuthority> permisos = new ArrayList<>();
-            GrantedAuthority p1 = new SimpleGrantedAuthority("MODULO_AUTOR");
+            GrantedAuthority p1 = new SimpleGrantedAuthority("ROLE_USUARIO_REGISTRADO");
             permisos.add(p1);
-            GrantedAuthority p2 = new SimpleGrantedAuthority("MODULO_PRESTAMO");
-            permisos.add(p2);
-            GrantedAuthority p3 = new SimpleGrantedAuthority("MODULO_EDITORIAL");
-            permisos.add(p3);
-            
-            
-            User user = new User(cliente.getDocumento(), cliente.getClave(), permisos);
-            
-            
-            
-            
+
+            ServletRequestAttributes atrr = (ServletRequestAttributes) RequestContextHolder.currentRequestAttributes();
+            HttpSession session = atrr.getRequest().getSession(true);
+            session.setAttribute("usuariosession", cliente);
+
+            User user = new User(cliente.getEmail(), cliente.getClave(), permisos);
+
             return user;
-    } else {
+        } else {
             return null;
         }
+    }
+
+    public Cliente buscarXId(Integer id) {
+        try {
+        Cliente cliente = clienteRepositorio.buscarClienteXId(id);
+        return cliente;
+        } catch (Exception e ) {
+                    System.err.println(e.getMessage());
+                        
+                        }
+        return null;
+
+    }
 }
-    } 
-
-
-    

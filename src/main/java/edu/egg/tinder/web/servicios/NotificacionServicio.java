@@ -17,10 +17,19 @@ import org.springframework.stereotype.Service;
  * @author ignacio
  */
 @Service
+
 public class NotificacionServicio {
     @Autowired
     private JavaMailSender mailSender;
+
+    /**
+     *
+     * @param cuerpo
+     * @param titulo
+     * @param mail
+     */
     @Async
+    
     public void enviarMail (String cuerpo, String titulo,String mail) {
         SimpleMailMessage mensaje = new SimpleMailMessage();
         mensaje.setTo(mail);

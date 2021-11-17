@@ -1,11 +1,15 @@
 package edu.egg.tinder.web;
 
+import edu.egg.tinder.web.excepciones.ErrorServicio;
 import edu.egg.tinder.web.servicios.ClienteServicios;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.SpringApplication;
 
 import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.boot.autoconfigure.jdbc.DataSourceAutoConfiguration;
+import org.springframework.boot.autoconfigure.security.servlet.SecurityAutoConfiguration;
+import org.springframework.boot.autoconfigure.security.servlet.UserDetailsServiceAutoConfiguration;
 
 
 import org.springframework.security.config.annotation.authentication.builders.AuthenticationManagerBuilder;
@@ -23,11 +27,14 @@ public class WebApplication extends WebSecurityConfigurerAdapter {
     
     public static void main(String[] args) {
         SpringApplication.run(WebApplication.class, args);
+        
+        
     }
-
+    
+  
     @Autowired
     public void configureGlobal(AuthenticationManagerBuilder auth) throws Exception {
         auth.userDetailsService(clienteServicios).passwordEncoder(new BCryptPasswordEncoder());
-
+        
     }
 }

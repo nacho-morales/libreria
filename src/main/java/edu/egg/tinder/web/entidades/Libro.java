@@ -6,9 +6,14 @@
 package edu.egg.tinder.web.entidades;
 
 import java.io.Serializable;
+import javax.persistence.Basic;
+import javax.persistence.Column;
 import javax.persistence.Entity;
+import javax.persistence.GeneratedValue;
+import javax.persistence.GenerationType;
 import javax.persistence.Id;
 import javax.persistence.OneToOne;
+import org.hibernate.annotations.GenericGenerator;
 
 /**
  *
@@ -18,6 +23,9 @@ import javax.persistence.OneToOne;
 public class Libro implements Serializable {
 
     @Id
+     @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Basic(optional = false)
+    @Column(name = "isbn",unique=true, nullable = false)
     private Integer isbn;
     private String titulo;
     private Integer anio;

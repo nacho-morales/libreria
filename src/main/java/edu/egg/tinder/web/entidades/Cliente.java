@@ -6,9 +6,15 @@
 package edu.egg.tinder.web.entidades;
 
 import java.io.Serializable;
+import javax.persistence.Basic;
 import javax.persistence.Column;
 import javax.persistence.Entity;
+import javax.persistence.GeneratedValue;
+import javax.persistence.GenerationType;
 import javax.persistence.Id;
+import javax.persistence.ManyToOne;
+import javax.persistence.OneToOne;
+import org.hibernate.annotations.GenericGenerator;
 
 /**
  *
@@ -18,6 +24,9 @@ import javax.persistence.Id;
 public class Cliente implements Serializable {
 
     @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Basic(optional = false)
+    @Column(name = "id", unique = true, nullable = false)
     private Integer id;
     @Column(unique = true)
     private String documento;
@@ -25,16 +34,38 @@ public class Cliente implements Serializable {
     private String apellido;
     private String email;
     private String clave;
-
+    @ManyToOne
+    private Zona zona;
+    @OneToOne
+    private Foto foto;
     public Cliente() {
     }
 
-    public Cliente(Integer id, String documento, String nombre, String apellido, String email, String clave) {
+    public Foto getFoto() {
+        return foto;
+    }
+
+    public void setFoto(Foto foto) {
+        this.foto = foto;
+    }
+    
+
+    public Cliente(Integer id, String documento, String nombre, String apellido, String email, String clave, Zona zona) {
         this.id = id;
         this.documento = documento;
         this.nombre = nombre;
         this.apellido = apellido;
         this.email = email;
+        this.clave = clave;
+        this.zona = zona;
+    }
+
+    public Zona getZona() {
+        return zona;
+    }
+
+    public void setZona(Zona zona) {
+        this.zona = zona;
     }
 
     public String getClave() {
@@ -87,8 +118,9 @@ public class Cliente implements Serializable {
 
     @Override
     public String toString() {
-        return "Cliente{" + "id=" + id + ", documento=" + documento + ", nombre=" + nombre + ", apellido=" + apellido + ", email=" + email + ", clave=" + clave + '}';
+        return "Cliente{" + "id=" + id + ", documento=" + documento + ", nombre=" + nombre + ", apellido=" + apellido + ", email=" + email + ", clave=" + clave + ", zona=" + zona + ", foto=" + foto + '}';
     }
 
-   
+    
+
 }

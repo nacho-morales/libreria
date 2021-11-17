@@ -58,7 +58,7 @@ public class PrestamoServicios {
 
     }
     @Transactional
-    public void modificarPrestamo(Integer id, Date fechaPrestamo, Date fechaDevolucion, Libro libro, Integer idcliente) throws ErrorServicio {
+    public void modificarPrestamo(Integer id, Date fechaPrestamo, Date fechaDevolucion, Libro libro, String idcliente) throws ErrorServicio {
         validarPrestamo(id, fechaPrestamo, fechaDevolucion, libro);
 
         Optional<Prestamo> respuesta = prestamoRepositorio.findById(id);
@@ -66,7 +66,7 @@ public class PrestamoServicios {
         if (respuesta.isPresent()) {
 
             Prestamo prestamo = prestamoRepositorio.findById(id).get();
-            if (prestamo.getCliente().getId() == idcliente) {
+            if (prestamo.getCliente().getId().equals(idcliente)) {
                 prestamo.setId(id);
                 prestamo.setFechaPrestamo(fechaPrestamo);
                 prestamo.setFechaDevolucion(fechaDevolucion);

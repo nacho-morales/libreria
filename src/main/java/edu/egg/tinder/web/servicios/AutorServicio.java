@@ -8,7 +8,6 @@ package edu.egg.tinder.web.servicios;
 import edu.egg.tinder.web.excepciones.ErrorServicio;
 import edu.egg.tinder.web.repositorios.AutorRepositorio;
 import java.util.Optional;
-import java.util.Scanner;
 import javax.transaction.Transactional;
 import edu.egg.tinder.web.entidades.Autor;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -22,7 +21,7 @@ import org.springframework.stereotype.Service;
 public class AutorServicio {
     @Autowired
     private AutorRepositorio autorRepositorio;
-       @Transactional     
+    @Transactional     
     public void crearAutor(Integer id, String nombre, boolean alta) throws ErrorServicio {
         
         validarAutor(id,nombre,alta);
